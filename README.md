@@ -114,7 +114,7 @@ https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/getWebhookInfo
 
 ## Scheduler externo
 
-O projeto nao usa mais APScheduler rodando dentro do Render. O scheduler agora fica no GitHub Actions e chama a API a cada 5 minutos.
+O projeto nao usa mais APScheduler rodando dentro do Render. O scheduler agora fica no GitHub Actions e chama a API em hora cheia.
 
 Endpoint:
 
@@ -134,7 +134,7 @@ curl -X POST "$APP_BASE_URL/scheduler/run" \
 
 Regra de envio:
 
-- o backend processa lembretes da janela atual de 5 minutos
+- o backend processa a janela atual de 5 minutos
 - se ja existir log `sent` para o mesmo reminder dentro da mesma janela, ele nao reenviara
 
 ## GitHub Actions
@@ -143,7 +143,7 @@ O workflow ja esta pronto em [.github/workflows/scheduler.yml](/c:/Users/leona/D
 
 Ele roda:
 
-- a cada 5 minutos
+- a cada hora cheia
 - manualmente por `workflow_dispatch`
 
 Configure estes `Repository Secrets` no GitHub:
