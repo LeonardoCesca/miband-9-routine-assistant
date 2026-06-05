@@ -26,6 +26,9 @@ class ReminderAgent:
         due: list[ReminderDispatch] = []
 
         for reminder in active_reminders:
+            if not self._time_tool.matches_weekday(reminder.get("days_of_week"), current=current):
+                continue
+
             if not self._time_tool.matches_window(
                 hour=int(reminder["hour"]),
                 minute=int(reminder["minute"]),

@@ -20,6 +20,7 @@ async def test_scheduler_route_processes_pending_window(client, container):
             "message": "Hora da rotina",
             "hour": 9,
             "minute": 30,
+            "days_of_week": [4],
             "active": True,
         }
     )

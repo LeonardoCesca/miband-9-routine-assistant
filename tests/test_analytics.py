@@ -13,6 +13,7 @@ def test_analytics_completion_rate(client, container):
             "message": "Hora da rotina",
             "hour": 9,
             "minute": 30,
+            "days_of_week": [4],
             "active": True,
         },
     ).json()
@@ -45,6 +46,7 @@ async def test_scheduler_agent_does_not_duplicate_same_window(container):
             "message": "Hora da rotina",
             "hour": 9,
             "minute": 30,
+            "days_of_week": [4],
             "active": True,
         }
     )
@@ -55,6 +57,29 @@ async def test_scheduler_agent_does_not_duplicate_same_window(container):
     assert len(first_run) == 1
     assert second_run == []
     assert len(container.telegram_tool.sent_messages) == 1
+
+
+@pytest.mark.asyncio
+async def test_scheduler_agent_respects_weekday(container):
+    user = container.supabase_tool.create_user(
+        {"name": "Leona", "telegram_chat_id": "123456"}
+    )
+    container.supabase_tool.create_reminder(
+        {
+            "user_id": user["id"],
+            "title": "Dia errado",
+            "message": "Nao deve enviar hoje",
+            "hour": 9,
+            "minute": 30,
+            "days_of_week": [0],
+            "active": True,
+        }
+    )
+
+    result = await container.scheduler_agent.tick()
+
+    assert result == []
+    assert len(container.telegram_tool.sent_messages) == 0
 
 
 def test_no_tokens_are_hardcoded():

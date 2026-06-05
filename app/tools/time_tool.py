@@ -11,6 +11,17 @@ class TimeTool:
     def now(self) -> datetime:
         return datetime.now(self._timezone)
 
+    def weekday(self, current: datetime | None = None) -> int:
+        reference = current or self.now()
+        return reference.weekday()
+
+    def matches_weekday(
+        self, days_of_week: list[int] | None, current: datetime | None = None
+    ) -> bool:
+        if not days_of_week:
+            return True
+        return self.weekday(current=current) in days_of_week
+
     def matches_minute(self, *, hour: int, minute: int, current: datetime | None = None) -> bool:
         reference = current or self.now()
         return reference.hour == hour and reference.minute == minute

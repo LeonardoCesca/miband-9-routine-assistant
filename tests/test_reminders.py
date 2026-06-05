@@ -9,6 +9,7 @@ def test_create_reminder(client):
             "message": "Hora da rotina",
             "hour": 9,
             "minute": 30,
+            "days_of_week": [4],
             "active": True,
         },
     )
@@ -17,6 +18,7 @@ def test_create_reminder(client):
     body = response.json()
     assert body["title"] == "Alongar"
     assert body["minute"] == 30
+    assert body["days_of_week"] == [4]
 
 
 def test_list_reminders(client):
@@ -29,6 +31,7 @@ def test_list_reminders(client):
             "message": "Hora da rotina",
             "hour": 9,
             "minute": 30,
+            "days_of_week": [4],
             "active": True,
         },
     )
@@ -49,6 +52,7 @@ def test_toggle_reminder(client):
             "message": "Hora da rotina",
             "hour": 9,
             "minute": 30,
+            "days_of_week": [4],
             "active": True,
         },
     ).json()
@@ -67,4 +71,3 @@ def test_message_tool_builds_buttons(container):
     assert keyboard.inline_keyboard[0][0].callback_data == f"done:{reminder_id}"
     assert keyboard.inline_keyboard[0][1].callback_data == f"not_done:{reminder_id}"
     assert keyboard.inline_keyboard[1][0].callback_data == f"postponed:{reminder_id}"
-

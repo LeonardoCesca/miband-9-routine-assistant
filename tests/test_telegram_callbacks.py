@@ -8,6 +8,7 @@ def _create_user_and_reminder(client):
             "message": "Hora da rotina",
             "hour": 9,
             "minute": 30,
+            "days_of_week": [4],
             "active": True,
         },
     ).json()
@@ -73,4 +74,3 @@ def test_postponed_callback_saves_postponed_status(client, container):
     assert "current_time" in log["metadata"]
     assert "suggested_time" in log["metadata"]
     assert container.telegram_tool.answered_callbacks[-1]["callback_query_id"] == "cbq-3"
-

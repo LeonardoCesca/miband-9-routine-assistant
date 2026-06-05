@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class HealthResponse(BaseModel):
@@ -29,7 +29,18 @@ class ReminderCreate(BaseModel):
     message: str = Field(min_length=1)
     hour: int = Field(ge=0, le=23)
     minute: int = Field(default=0, ge=0, le=59)
+    days_of_week: list[int] = Field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6])
     active: bool = True
+
+    @field_validator("days_of_week")
+    @classmethod
+    def validate_days_of_week(cls, value: list[int]) -> list[int]:
+        if not value:
+            raise ValueError("days_of_week must contain at least one weekday")
+        normalized = sorted(set(value))
+        if any(day < 0 or day > 6 for day in normalized):
+            raise ValueError("days_of_week values must be between 0 and 6")
+        return normalized
 
 
 class ReminderRead(ReminderCreate):
