@@ -118,3 +118,5 @@ class ReminderDispatch(BaseModel):
 class SchedulerRunResponse(BaseModel):
     processed: int
     sent_keys: list[str]
+    current_time: datetime
+    window_minutes: int

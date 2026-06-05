@@ -32,4 +32,5 @@ async def test_scheduler_route_processes_pending_window(client, container):
 
     assert response.status_code == 200
     assert response.json()["processed"] == 1
+    assert response.json()["window_minutes"] == 5
     assert len(container.telegram_tool.sent_messages) == 1

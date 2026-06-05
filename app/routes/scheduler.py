@@ -19,5 +19,13 @@ async def run_scheduler(
             detail="Invalid scheduler token",
         )
 
+    current_time = container.time_tool.now()
+    print(f"[scheduler] trigger received at {current_time.isoformat()}")
     sent_keys = await container.scheduler_agent.tick()
-    return SchedulerRunResponse(processed=len(sent_keys), sent_keys=sent_keys)
+    print(f"[scheduler] processed={len(sent_keys)} sent_keys={sent_keys}")
+    return SchedulerRunResponse(
+        processed=len(sent_keys),
+        sent_keys=sent_keys,
+        current_time=current_time,
+        window_minutes=5,
+    )

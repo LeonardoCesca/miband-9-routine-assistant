@@ -1,6 +1,21 @@
 # band-routine-assistant
 
-Backend em Python com FastAPI para enviar lembretes via Telegram. Quando a notificacao chega no iPhone, a Xiaomi Smart Band 9 Pro pode vibrar ao espelhar a notificacao do Telegram. Os botoes inline permitem registrar `done`, `not_done` e `postponed`, e tudo fica salvo no Supabase.
+`band-routine-assistant` e um backend em Python para rotinas e micro-habitos com disparo automatizado via Telegram, registro de resposta do usuario e analise de adesao. A proposta do projeto e simples: enviar lembretes acionaveis para o iPhone, permitir resposta com um toque e armazenar historico e metricas no Supabase.
+
+Na pratica, o fluxo funciona assim:
+- um scheduler externo chama a API
+- a API identifica lembretes elegiveis
+- o Telegram entrega a notificacao
+- o usuario responde com `Feito`, `Nao feito` ou `Adiar 15min`
+- tudo fica registrado para analytics e auditoria
+
+## Proposta de valor
+
+- Disparo de lembretes recorrentes com baixo atrito
+- Resposta em um toque com botoes inline no Telegram
+- Persistencia de eventos para acompanhamento de adesao
+- Arquitetura simples, separada por `agents`, `tools` e `services`
+- Pronto para deploy com FastAPI + Supabase + Render
 
 ## Stack
 
@@ -14,20 +29,31 @@ Backend em Python com FastAPI para enviar lembretes via Telegram. Quando a notif
 - pytest
 - pytest-asyncio
 - Timezone `America/Sao_Paulo`
-- GitHub Actions como scheduler externo
+- Scheduler externo por HTTP
 
 ## Arquitetura
 
-`Agent` decide ou coordena uma responsabilidade.
+O projeto separa claramente responsabilidade de negocio e execucao tecnica:
 
-`Tool` executa uma acao tecnica reutilizavel.
+- `Agent`: decide, coordena e orquestra fluxo
+- `Tool`: executa uma acao tecnica reutilizavel
+- `Service`: encapsula integracoes externas
 
-- `OrchestratorAgent`: coordena disparo e logging dos lembretes.
-- `SchedulerAgent`: processa uma janela de 5 minutos quando o endpoint externo e chamado.
-- `ReminderAgent`: busca lembretes ativos, filtra os da janela atual e monta o payload.
-- `NotificationAgent`: envia mensagem pronta via Telegram.
-- `LoggingAgent`: persiste eventos `sent`, `done`, `not_done`, `postponed` e `error`.
-- `AnalyticsAgent`: consolida metricas de uso.
+### Agents
+
+- `OrchestratorAgent`: coordena o ciclo de processamento de lembretes
+- `SchedulerAgent`: executa a janela de processamento quando acionado externamente
+- `ReminderAgent`: identifica lembretes elegiveis por horario e dia da semana
+- `NotificationAgent`: envia mensagens prontas para o Telegram
+- `LoggingAgent`: registra eventos como `sent`, `done`, `not_done`, `postponed` e `error`
+- `AnalyticsAgent`: consolida metricas de adesao
+
+### Tools
+
+- `TelegramTool`: envio de mensagem e resposta a callback do Telegram
+- `SupabaseTool`: operacoes de leitura, insercao, update e logs
+- `TimeTool`: timezone, janela de processamento e regras de calendario
+- `MessageTool`: montagem de texto e botoes inline
 
 ## Estrutura
 
@@ -56,9 +82,75 @@ render.yaml
 README.md
 ```
 
+## Modelo funcional
+
+### Usuario
+
+Cada usuario representa um destino de notificacao no Telegram:
+- `name`
+- `telegram_chat_id`
+
+### Reminder
+
+Cada reminder representa uma acao recorrente:
+- `title`
+- `message`
+- `hour`
+- `minute`
+- `days_of_week`
+- `active`
+
+### Reminder logs
+
+Cada interacao relevante gera rastreabilidade:
+- `sent`
+- `done`
+- `not_done`
+- `postponed`
+- `error`
+
+## API
+
+### Endpoints principais
+
+- `GET /health`
+- `POST /users`
+- `GET /users`
+- `POST /reminders`
+- `GET /reminders`
+- `PATCH /reminders/{id}/toggle`
+- `POST /telegram/webhook`
+- `GET /analytics`
+- `POST /scheduler/run`
+
+### Exemplo de reminder
+
+```json
+{
+  "user_id": "UUID_DO_USER",
+  "title": "Segunda - Peitoral",
+  "message": "Faca 1 serie agora.",
+  "hour": 9,
+  "minute": 0,
+  "days_of_week": [0],
+  "active": true
+}
+```
+
+Padrao de `days_of_week`:
+- `0` = segunda
+- `1` = terca
+- `2` = quarta
+- `3` = quinta
+- `4` = sexta
+- `5` = sabado
+- `6` = domingo
+
+Se `days_of_week` nao for informado, o reminder vale para todos os dias.
+
 ## Variaveis de ambiente
 
-Copie `.env.example` para `.env` e preencha:
+Copie `.env.example` para `.env`:
 
 ```env
 SUPABASE_URL=
@@ -78,6 +170,13 @@ SCHEDULER_TOKEN=
 - `Project URL` para `SUPABASE_URL`
 - `service_role` para `SUPABASE_SERVICE_ROLE_KEY`
 
+Se o banco ja existir, rode tambem:
+
+```sql
+alter table reminders
+add column if not exists days_of_week int[] not null default array[0,1,2,3,4,5,6];
+```
+
 ## Setup local
 
 ```powershell
@@ -87,20 +186,19 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-API local:
-
+Ambiente local:
 - `http://127.0.0.1:8000/health`
 - `http://127.0.0.1:8000/docs`
 
-## Telegram
+## Configuracao do Telegram
 
-1. Crie um bot com `@BotFather`.
-2. Copie o token para `TELEGRAM_BOT_TOKEN`.
-3. Envie uma mensagem para o bot.
-4. Descubra o `telegram_chat_id`.
-5. Crie um usuario via `POST /users`.
+1. Crie um bot com `@BotFather`
+2. Copie o token para `TELEGRAM_BOT_TOKEN`
+3. Envie uma mensagem para o bot
+4. Descubra o `telegram_chat_id`
+5. Cadastre o usuario na API
 
-Webhook:
+### Webhook do Telegram
 
 ```text
 https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=<APP_BASE_URL>/telegram/webhook
@@ -112,53 +210,86 @@ Conferencia:
 https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/getWebhookInfo
 ```
 
-## Scheduler externo
+## Scheduler externo recomendado
 
-O projeto nao usa mais APScheduler rodando dentro do Render. O scheduler agora fica no GitHub Actions e chama a API em hora cheia.
+O projeto nao depende de APScheduler rodando dentro da web app. O processamento e acionado por um scheduler HTTP externo.
 
-Endpoint:
+### Recomendacao
+
+Para este projeto, a opcao mais simples e confiavel no plano free e usar `cron-job.org`.
+
+Configuracao recomendada:
+- URL: `https://miband-9-routine-assistant.onrender.com/scheduler/run`
+- Method: `POST`
+- Header: `X-Scheduler-Token: <SCHEDULER_TOKEN>`
+- Frequencia: a cada 5 minutos
+
+### Endpoint de scheduler
 
 - `POST /scheduler/run`
 
-Protecao:
+Header obrigatorio:
 
-- Header obrigatorio `X-Scheduler-Token`
-- Valor lido de `SCHEDULER_TOKEN`
+```text
+X-Scheduler-Token: <SCHEDULER_TOKEN>
+```
+
+### Regras de processamento
+
+- processa uma janela atual de 5 minutos
+- respeita dia da semana
+- evita duplicidade usando `reminder_logs` com status `sent`
+
+### Resposta do endpoint
 
 Exemplo:
 
+```json
+{
+  "processed": 1,
+  "sent_keys": ["reminder-id:202606051000"],
+  "current_time": "2026-06-05T10:03:12-03:00",
+  "window_minutes": 5
+}
+```
+
+Exemplo manual:
+
 ```bash
 curl -X POST "$APP_BASE_URL/scheduler/run" \
   -H "X-Scheduler-Token: $SCHEDULER_TOKEN"
 ```
 
-Regra de envio:
+## Como configurar no cron-job.org
 
-- o backend processa a janela atual de 5 minutos
-- se ja existir log `sent` para o mesmo reminder dentro da mesma janela, ele nao reenviara
+1. Crie uma conta em `cron-job.org`
+2. Clique em `Create cronjob`
+3. Configure:
+- URL: `https://miband-9-routine-assistant.onrender.com/scheduler/run`
+- Method: `POST`
+- Schedule: `every 5 minutes`
+4. Em headers, adicione:
+- `X-Scheduler-Token: SEU_SCHEDULER_TOKEN`
+5. Salve o job
+6. Rode um teste manual
+
+Vantagens:
+- gratis
+- simples
+- nao depende do scheduler do GitHub Actions
+- continua compativel com a arquitetura atual
+- nao exige mudar o backend
 
 ## GitHub Actions
 
-O workflow ja esta pronto em [.github/workflows/scheduler.yml](/c:/Users/leona/Documents/band-routine-assistant/.github/workflows/scheduler.yml:1).
+O workflow em [.github/workflows/scheduler.yml](/c:/Users/leona/Documents/band-routine-assistant/.github/workflows/scheduler.yml:1) pode ser mantido como opcao secundaria ou ferramenta de teste manual.
 
-Ele roda:
+Ele e util para:
+- `workflow_dispatch`
+- testes operacionais
+- comparacao entre scheduler externo e GitHub
 
-- a cada hora cheia
-- manualmente por `workflow_dispatch`
-
-Configure estes `Repository Secrets` no GitHub:
-
-- `APP_BASE_URL`
-- `SCHEDULER_TOKEN`
-
-O workflow faz:
-
-```bash
-curl -X POST "$APP_BASE_URL/scheduler/run" \
-  -H "X-Scheduler-Token: $SCHEDULER_TOKEN"
-```
-
-## Deploy gratis no Render
+## Deploy no Render
 
 O arquivo [render.yaml](/c:/Users/leona/Documents/band-routine-assistant/render.yaml:1) ja define:
 
@@ -166,8 +297,7 @@ O arquivo [render.yaml](/c:/Users/leona/Documents/band-routine-assistant/render.
 - start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - health check: `/health`
 
-No Render, configure:
-
+Configure no Render:
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `TELEGRAM_BOT_TOKEN`
@@ -175,26 +305,14 @@ No Render, configure:
 - `APP_TIMEZONE`
 - `SCHEDULER_TOKEN`
 
-Depois do deploy, teste:
-
-- `<APP_BASE_URL>/health`
-- `<APP_BASE_URL>/docs`
-
-## Endpoints
-
-- `GET /health`
-- `POST /users`
-- `GET /users`
-- `POST /reminders`
-- `GET /reminders`
-- `PATCH /reminders/{id}/toggle`
-- `POST /telegram/webhook`
-- `GET /analytics`
-- `POST /scheduler/run`
+Depois do deploy:
+- teste `GET /health`
+- acesse `GET /docs`
+- valide manualmente `POST /scheduler/run`
 
 ## Exemplos de uso
 
-Criar usuario:
+### Criar usuario
 
 ```bash
 curl -X POST "$APP_BASE_URL/users" \
@@ -202,29 +320,61 @@ curl -X POST "$APP_BASE_URL/users" \
   -d "{\"name\":\"Leona\",\"telegram_chat_id\":\"SEU_CHAT_ID\"}"
 ```
 
-Criar reminder:
+### Criar reminder
 
 ```bash
 curl -X POST "$APP_BASE_URL/reminders" \
   -H "Content-Type: application/json" \
-  -d "{\"user_id\":\"UUID_DO_USER\",\"title\":\"Alongar\",\"message\":\"Hora da rotina\",\"hour\":9,\"minute\":30,\"active\":true}"
+  -d "{\"user_id\":\"UUID_DO_USER\",\"title\":\"Alongar\",\"message\":\"Hora da rotina\",\"hour\":9,\"minute\":30,\"days_of_week\":[0,1,2,3,4],\"active\":true}"
 ```
 
-Rodar scheduler manualmente:
+### Rodar scheduler manualmente
 
 ```bash
 curl -X POST "$APP_BASE_URL/scheduler/run" \
   -H "X-Scheduler-Token: $SCHEDULER_TOKEN"
 ```
 
-## Testes
+## Qualidade e testes
 
 ```powershell
 pytest
 ```
 
-## Observacoes
+A suite cobre:
+- health check
+- usuarios
+- reminders
+- toggle de ativacao
+- callbacks do Telegram
+- analytics
+- deduplicacao do scheduler
+- filtro por dia da semana
+- arquivos de ambiente e seguranca basica
 
-- O webhook processa `callback_query`, sem polling.
-- A acao `postponed` registra no `metadata` o horario atual e o horario sugerido de `+15min`.
-- Nesta fase o adiamento e registrado como evento analitico e nao altera o horario persistido do reminder.
+## Seguranca
+
+- nao hardcode tokens ou chaves
+- mantenha `.env` fora do versionamento
+- use `SUPABASE_SERVICE_ROLE_KEY` apenas no backend
+- proteja `/scheduler/run` com `SCHEDULER_TOKEN`
+- nao exponha segredos em prints, logs ou clientes frontend
+
+## Limitacoes atuais
+
+- a vibracao da Mi Band depende do espelhamento de notificacoes do iPhone
+- o projeto nao fala diretamente com a pulseira
+- o Render free pode ter cold start
+- o scheduler ideal para operacao free aqui e externo via HTTP
+
+## Roadmap sugerido
+
+- painel admin para calendarios e usuarios
+- templates de rotina por programa
+- retries e observabilidade de scheduler
+- metricas por periodo e por tipo de rotina
+- multi-tenant para uso comercial
+
+## Licenca
+
+Defina a licenca conforme a estrategia comercial do produto.
