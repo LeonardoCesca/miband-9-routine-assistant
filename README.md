@@ -1,21 +1,38 @@
 # band-routine-assistant
 
-`band-routine-assistant` e um backend em Python para rotinas e micro-habitos com disparo automatizado via Telegram, registro de resposta do usuario e analise de adesao. A proposta do projeto e simples: enviar lembretes acionaveis para o iPhone, permitir resposta com um toque e armazenar historico e metricas no Supabase.
+`band-routine-assistant` e uma infraestrutura backend para lembretes recorrentes via Telegram, com confirmacao de execucao pelo usuario, persistencia de historico e base para analytics de adesao.
 
-Na pratica, o fluxo funciona assim:
-- um scheduler externo chama a API
-- a API identifica lembretes elegiveis
-- o Telegram entrega a notificacao
-- o usuario responde com `Feito`, `Nao feito` ou `Adiar 15min`
-- tudo fica registrado para analytics e auditoria
+O produto foi desenhado para cenarios de rotina, bem-estar, accountability e micro-habitos, com foco em:
+- baixo atrito para o usuario final
+- operacao simples
+- integracao barata e escalavel
+- arquitetura clara para evolucao comercial
 
-## Proposta de valor
+## O que o produto entrega
 
-- Disparo de lembretes recorrentes com baixo atrito
-- Resposta em um toque com botoes inline no Telegram
-- Persistencia de eventos para acompanhamento de adesao
-- Arquitetura simples, separada por `agents`, `tools` e `services`
-- Pronto para deploy com FastAPI + Supabase + Render
+- Disparo automatizado de lembretes por agenda
+- Resposta em um toque no Telegram
+- Registro de `feito`, `nao feito` e `adiado`
+- Persistencia de eventos e auditoria no Supabase
+- Regras por horario e dia da semana
+- Base pronta para metricas, painel e monetizacao futura
+
+## Fluxo do produto
+
+1. Um scheduler HTTP externo chama `POST /scheduler/run`
+2. A API identifica reminders elegiveis
+3. O Telegram entrega a notificacao ao usuario
+4. O usuario responde via botoes inline
+5. O backend registra tudo no Supabase
+
+## Casos de uso
+
+- Rotina de exercicios ao longo do dia
+- Habit tracking
+- Programas de treino por dia da semana
+- Lembretes de autocuidado
+- Protocolos de reabilitacao ou adesao
+- MVPs wellness ou health accountability
 
 ## Stack
 
@@ -29,31 +46,31 @@ Na pratica, o fluxo funciona assim:
 - pytest
 - pytest-asyncio
 - Timezone `America/Sao_Paulo`
-- Scheduler externo por HTTP
+- Scheduler HTTP externo
 
 ## Arquitetura
 
-O projeto separa claramente responsabilidade de negocio e execucao tecnica:
+O projeto separa claramente regra de negocio, orquestracao e execucao tecnica.
 
-- `Agent`: decide, coordena e orquestra fluxo
+- `Agent`: decide, coordena e orquestra o fluxo
 - `Tool`: executa uma acao tecnica reutilizavel
 - `Service`: encapsula integracoes externas
 
 ### Agents
 
-- `OrchestratorAgent`: coordena o ciclo de processamento de lembretes
-- `SchedulerAgent`: executa a janela de processamento quando acionado externamente
-- `ReminderAgent`: identifica lembretes elegiveis por horario e dia da semana
-- `NotificationAgent`: envia mensagens prontas para o Telegram
-- `LoggingAgent`: registra eventos como `sent`, `done`, `not_done`, `postponed` e `error`
+- `OrchestratorAgent`: coordena o ciclo de processamento
+- `SchedulerAgent`: executa a janela de reminders quando acionado externamente
+- `ReminderAgent`: filtra reminders por horario e dia da semana
+- `NotificationAgent`: envia mensagens para o Telegram
+- `LoggingAgent`: registra eventos de processamento
 - `AnalyticsAgent`: consolida metricas de adesao
 
 ### Tools
 
-- `TelegramTool`: envio de mensagem e resposta a callback do Telegram
-- `SupabaseTool`: operacoes de leitura, insercao, update e logs
-- `TimeTool`: timezone, janela de processamento e regras de calendario
-- `MessageTool`: montagem de texto e botoes inline
+- `TelegramTool`
+- `SupabaseTool`
+- `TimeTool`
+- `MessageTool`
 
 ## Estrutura
 
@@ -74,7 +91,6 @@ app/
   services/
   sql/schema.sql
 tests/
-.github/workflows/scheduler.yml
 .env.example
 .gitignore
 requirements.txt
@@ -82,17 +98,15 @@ render.yaml
 README.md
 ```
 
-## Modelo funcional
+## Modelo de dados
 
 ### Usuario
 
-Cada usuario representa um destino de notificacao no Telegram:
 - `name`
 - `telegram_chat_id`
 
 ### Reminder
 
-Cada reminder representa uma acao recorrente:
 - `title`
 - `message`
 - `hour`
@@ -102,7 +116,6 @@ Cada reminder representa uma acao recorrente:
 
 ### Reminder logs
 
-Cada interacao relevante gera rastreabilidade:
 - `sent`
 - `done`
 - `not_done`
@@ -137,7 +150,7 @@ Cada interacao relevante gera rastreabilidade:
 }
 ```
 
-Padrao de `days_of_week`:
+`days_of_week` segue o padrao:
 - `0` = segunda
 - `1` = terca
 - `2` = quarta
@@ -150,7 +163,7 @@ Se `days_of_week` nao for informado, o reminder vale para todos os dias.
 
 ## Variaveis de ambiente
 
-Copie `.env.example` para `.env`:
+Crie um `.env` com:
 
 ```env
 SUPABASE_URL=
@@ -163,14 +176,14 @@ SCHEDULER_TOKEN=
 
 ## Banco no Supabase
 
-1. Crie um projeto no Supabase.
-2. Abra o `SQL Editor`.
-3. Rode o SQL de [app/sql/schema.sql](/c:/Users/leona/Documents/band-routine-assistant/app/sql/schema.sql:1).
+1. Crie um projeto no Supabase
+2. Abra o `SQL Editor`
+3. Rode o SQL de [app/sql/schema.sql](/c:/Users/leona/Documents/band-routine-assistant/app/sql/schema.sql:1)
 4. Em `Project Settings > API`, copie:
 - `Project URL` para `SUPABASE_URL`
 - `service_role` para `SUPABASE_SERVICE_ROLE_KEY`
 
-Se o banco ja existir, rode tambem:
+Se o banco ja existir:
 
 ```sql
 alter table reminders
@@ -210,19 +223,26 @@ Conferencia:
 https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/getWebhookInfo
 ```
 
-## Scheduler externo recomendado
+## Scheduler operacional recomendado
 
-O projeto nao depende de APScheduler rodando dentro da web app. O processamento e acionado por um scheduler HTTP externo.
+O scheduler principal recomendado para operacao free e `cron-job.org`.
 
-### Recomendacao
+### Por que essa escolha
 
-Para este projeto, a opcao mais simples e confiavel no plano free e usar `cron-job.org`.
+- gratuito
+- confiavel para HTTP cron
+- simples de configurar
+- nao depende do `schedule` do GitHub Actions
+- nao exige alterar a arquitetura da aplicacao
 
-Configuracao recomendada:
+## Configuracao no cron-job.org
+
+Crie um cron job com:
+
 - URL: `https://miband-9-routine-assistant.onrender.com/scheduler/run`
 - Method: `POST`
 - Header: `X-Scheduler-Token: <SCHEDULER_TOKEN>`
-- Frequencia: a cada 5 minutos
+- Frequencia: `every 5 minutes`
 
 ### Endpoint de scheduler
 
@@ -240,9 +260,7 @@ X-Scheduler-Token: <SCHEDULER_TOKEN>
 - respeita dia da semana
 - evita duplicidade usando `reminder_logs` com status `sent`
 
-### Resposta do endpoint
-
-Exemplo:
+### Exemplo de resposta
 
 ```json
 {
@@ -253,41 +271,12 @@ Exemplo:
 }
 ```
 
-Exemplo manual:
+### Exemplo manual
 
 ```bash
 curl -X POST "$APP_BASE_URL/scheduler/run" \
   -H "X-Scheduler-Token: $SCHEDULER_TOKEN"
 ```
-
-## Como configurar no cron-job.org
-
-1. Crie uma conta em `cron-job.org`
-2. Clique em `Create cronjob`
-3. Configure:
-- URL: `https://miband-9-routine-assistant.onrender.com/scheduler/run`
-- Method: `POST`
-- Schedule: `every 5 minutes`
-4. Em headers, adicione:
-- `X-Scheduler-Token: SEU_SCHEDULER_TOKEN`
-5. Salve o job
-6. Rode um teste manual
-
-Vantagens:
-- gratis
-- simples
-- nao depende do scheduler do GitHub Actions
-- continua compativel com a arquitetura atual
-- nao exige mudar o backend
-
-## GitHub Actions
-
-O workflow em [.github/workflows/scheduler.yml](/c:/Users/leona/Documents/band-routine-assistant/.github/workflows/scheduler.yml:1) pode ser mantido como opcao secundaria ou ferramenta de teste manual.
-
-Ele e util para:
-- `workflow_dispatch`
-- testes operacionais
-- comparacao entre scheduler externo e GitHub
 
 ## Deploy no Render
 
@@ -306,9 +295,10 @@ Configure no Render:
 - `SCHEDULER_TOKEN`
 
 Depois do deploy:
-- teste `GET /health`
-- acesse `GET /docs`
+- valide `GET /health`
+- valide `GET /docs`
 - valide manualmente `POST /scheduler/run`
+- conecte o `cron-job.org`
 
 ## Exemplos de uso
 
@@ -335,7 +325,32 @@ curl -X POST "$APP_BASE_URL/scheduler/run" \
   -H "X-Scheduler-Token: $SCHEDULER_TOKEN"
 ```
 
-## Qualidade e testes
+## Operacao
+
+### Checklist de producao minima
+
+- Render online
+- Supabase configurado
+- bot do Telegram criado
+- webhook do Telegram configurado
+- usuario com `telegram_chat_id`
+- reminders ativos
+- `cron-job.org` chamando `/scheduler/run`
+
+### Observabilidade
+
+O endpoint `/scheduler/run` retorna:
+- quantidade processada
+- chaves enviadas
+- horario atual
+- janela de processamento
+
+Isso permite diagnosticar rapidamente:
+- se o scheduler chamou a API
+- se havia reminders elegiveis
+- se a janela operacional esta correta
+
+## Qualidade
 
 ```powershell
 pytest
@@ -350,7 +365,7 @@ A suite cobre:
 - analytics
 - deduplicacao do scheduler
 - filtro por dia da semana
-- arquivos de ambiente e seguranca basica
+- seguranca basica e arquivos de ambiente
 
 ## Seguranca
 
@@ -358,22 +373,23 @@ A suite cobre:
 - mantenha `.env` fora do versionamento
 - use `SUPABASE_SERVICE_ROLE_KEY` apenas no backend
 - proteja `/scheduler/run` com `SCHEDULER_TOKEN`
-- nao exponha segredos em prints, logs ou clientes frontend
+- nao exponha segredos em frontend, prints ou logs externos
 
 ## Limitacoes atuais
 
-- a vibracao da Mi Band depende do espelhamento de notificacoes do iPhone
-- o projeto nao fala diretamente com a pulseira
-- o Render free pode ter cold start
-- o scheduler ideal para operacao free aqui e externo via HTTP
+- a Mi Band depende do espelhamento de notificacoes do iPhone
+- o projeto nao conversa diretamente com a pulseira
+- o Render free pode sofrer cold start
+- a confiabilidade do scheduler depende do servico HTTP externo escolhido
 
-## Roadmap sugerido
+## Roadmap comercial
 
-- painel admin para calendarios e usuarios
-- templates de rotina por programa
-- retries e observabilidade de scheduler
-- metricas por periodo e por tipo de rotina
-- multi-tenant para uso comercial
+- painel admin para usuarios e agendas
+- programas prontos de rotina e treino
+- segmentacao por usuario e plano
+- retries e alertas operacionais
+- dashboard de adesao
+- multi-tenant e billing
 
 ## Licenca
 
