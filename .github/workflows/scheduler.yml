@@ -9,8 +9,17 @@ jobs:
   call-scheduler:
     runs-on: ubuntu-latest
     steps:
+      - name: Show trigger context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "repository=${{ github.repository }}"
+
       - name: Call scheduler endpoint
         run: |
-          curl --fail --show-error --silent \
+          http_code=$(curl --silent --show-error --output response.json --write-out "%{http_code}" \
             -X POST "${{ secrets.APP_BASE_URL }}/scheduler/run" \
-            -H "X-Scheduler-Token: ${{ secrets.SCHEDULER_TOKEN }}"
+            -H "X-Scheduler-Token: ${{ secrets.SCHEDULER_TOKEN }}")
+          echo "http_code=$http_code"
+          cat response.json
+          test "$http_code" -ge 200 -a "$http_code" -lt 300
