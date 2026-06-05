@@ -103,3 +103,7 @@ class ReminderDispatch(BaseModel):
     reply_markup: InlineKeyboardMarkup
     dedupe_key: str
 
+
+class SchedulerRunResponse(BaseModel):
+    processed: int
+    sent_keys: list[str]

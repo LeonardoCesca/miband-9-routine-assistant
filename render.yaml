@@ -18,4 +18,5 @@ services:
         sync: false
       - key: APP_BASE_URL
         sync: false
-
+      - key: SCHEDULER_TOKEN
+        sync: false

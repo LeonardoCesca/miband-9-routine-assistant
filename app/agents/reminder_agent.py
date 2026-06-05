@@ -19,16 +19,17 @@ class ReminderAgent:
         self._message_tool = message_tool
         self._time_tool = time_tool
 
-    def due_reminders(self) -> list[ReminderDispatch]:
+    def due_reminders(self, window_minutes: int = 5) -> list[ReminderDispatch]:
         active_reminders = self._supabase_tool.list_active_reminders()
         users = {user["id"]: user for user in self._supabase_tool.list_users()}
         current = self._time_tool.now()
         due: list[ReminderDispatch] = []
 
         for reminder in active_reminders:
-            if not self._time_tool.matches_minute(
+            if not self._time_tool.matches_window(
                 hour=int(reminder["hour"]),
                 minute=int(reminder["minute"]),
+                window_minutes=window_minutes,
                 current=current,
             ):
                 continue
@@ -50,8 +51,9 @@ class ReminderAgent:
                         message=reminder["message"],
                     ),
                     reply_markup=self._message_tool.build_keyboard(reminder_id),
-                    dedupe_key=self._time_tool.build_minute_key(reminder_id, current=current),
+                    dedupe_key=self._time_tool.build_window_key(
+                        reminder_id, window_minutes, current=current
+                    ),
                 )
             )
         return due
-

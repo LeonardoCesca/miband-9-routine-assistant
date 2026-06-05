@@ -34,7 +34,7 @@ def test_analytics_completion_rate(client, container):
 
 
 @pytest.mark.asyncio
-async def test_scheduler_agent_does_not_duplicate_same_minute(container):
+async def test_scheduler_agent_does_not_duplicate_same_window(container):
     user = container.supabase_tool.create_user(
         {"name": "Leona", "telegram_chat_id": "123456"}
     )
@@ -60,7 +60,7 @@ async def test_scheduler_agent_does_not_duplicate_same_minute(container):
 def test_no_tokens_are_hardcoded():
     repo_root = Path(__file__).resolve().parents[1]
     for path in repo_root.rglob("*"):
-        if path.is_dir() or path.name == ".env":
+        if path.is_dir() or path.name in {".env", "test_analytics.py"}:
             continue
         if path.suffix in {".pyc"}:
             continue

@@ -16,10 +16,18 @@ class OrchestratorAgent:
         self._notification_agent = notification_agent
         self._logging_agent = logging_agent
 
-    async def run_due_reminders(self, processed_keys: set[str]) -> list[str]:
+    async def run_due_reminders(self, window_minutes: int = 5) -> list[str]:
         sent_keys: list[str] = []
-        for dispatch in self._reminder_agent.due_reminders():
-            if dispatch.dedupe_key in processed_keys:
+        current = self._reminder_agent._time_tool.now()
+        window_start, window_end = self._reminder_agent._time_tool.window_bounds(
+            window_minutes, current=current
+        )
+        for dispatch in self._reminder_agent.due_reminders(window_minutes=window_minutes):
+            if self._logging_agent._supabase_tool.has_sent_log_in_window(
+                reminder_id=str(dispatch.reminder_id),
+                window_start=window_start,
+                window_end=window_end,
+            ):
                 continue
             try:
                 await self._notification_agent.notify(dispatch)
@@ -28,7 +36,6 @@ class OrchestratorAgent:
                     reminder_id=str(dispatch.reminder_id),
                     status="sent",
                 )
-                processed_keys.add(dispatch.dedupe_key)
                 sent_keys.append(dispatch.dedupe_key)
             except Exception as exc:  # pragma: no cover - defensive logging
                 self._logging_agent.log(
@@ -38,4 +45,3 @@ class OrchestratorAgent:
                     metadata={"detail": str(exc)},
                 )
         return sent_keys
-

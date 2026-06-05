@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     telegram_bot_token: str = Field(default="", alias="TELEGRAM_BOT_TOKEN")
     app_base_url: str = Field(default="", alias="APP_BASE_URL")
     app_timezone: str = Field(default="America/Sao_Paulo", alias="APP_TIMEZONE")
+    scheduler_token: str = Field(default="", alias="SCHEDULER_TOKEN")
 
     model_config = SettingsConfigDict(
         env_file=".env",

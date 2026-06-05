@@ -1,0 +1,16 @@
+name: Run Reminder Scheduler
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  call-scheduler:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Call Render scheduler endpoint
+        run: |
+          curl -X POST "${{ secrets.APP_BASE_URL }}/scheduler/run" \
+            -H "X-Scheduler-Token: ${{ secrets.SCHEDULER_TOKEN }}"

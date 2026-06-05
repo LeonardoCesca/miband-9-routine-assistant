@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from app.models import ReminderLogRead
@@ -63,3 +64,24 @@ class SupabaseTool:
     def list_logs(self) -> list[dict[str, Any]]:
         return self._service.select("reminder_logs")
 
+    def has_sent_log_in_window(
+        self,
+        *,
+        reminder_id: str,
+        window_start: datetime,
+        window_end: datetime,
+    ) -> bool:
+        sent_logs = self._service.select(
+            "reminder_logs",
+            filters={"reminder_id": reminder_id, "status": "sent"},
+        )
+        for log in sent_logs:
+            created_at = log.get("created_at")
+            if not created_at:
+                continue
+            created_dt = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+            if created_dt.tzinfo is None:
+                created_dt = created_dt.replace(tzinfo=window_end.tzinfo)
+            if window_start <= created_dt <= window_end:
+                return True
+        return False

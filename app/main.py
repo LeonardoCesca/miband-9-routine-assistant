@@ -14,14 +14,13 @@ from app.agents.scheduler_agent import SchedulerAgent
 from app.config import get_settings
 from app.database import get_supabase_client
 from app.models import CallbackActionResult, HealthResponse
-from app.routes import analytics, reminders, telegram, users
+from app.routes import analytics, reminders, telegram, users, scheduler
 from app.services.supabase_service import SupabaseService
 from app.services.telegram_service import TelegramService
 from app.tools.message_tool import MessageTool
 from app.tools.supabase_tool import SupabaseTool
 from app.tools.telegram_tool import TelegramTool
 from app.tools.time_tool import TimeTool
-
 
 @dataclass
 class AppContainer:
@@ -87,7 +86,7 @@ def build_container() -> AppContainer:
     reminder_agent = ReminderAgent(supabase_tool, message_tool, time_tool)
     notification_agent = NotificationAgent(telegram_tool)
     orchestrator_agent = OrchestratorAgent(reminder_agent, notification_agent, logging_agent)
-    scheduler_agent = SchedulerAgent(orchestrator_agent, time_tool)
+    scheduler_agent = SchedulerAgent(orchestrator_agent, window_minutes=5)
     analytics_agent = AnalyticsAgent(supabase_tool)
 
     return AppContainer(
@@ -112,12 +111,6 @@ app.state.container = None
 async def on_startup() -> None:
     if app.state.container is None:
         app.state.container = build_container()
-    app.state.container.scheduler_agent.start()
-
-
-@app.on_event("shutdown")
-async def on_shutdown() -> None:
-    app.state.container.scheduler_agent.shutdown()
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
@@ -129,3 +122,4 @@ app.include_router(users.router)
 app.include_router(reminders.router)
 app.include_router(telegram.router)
 app.include_router(analytics.router)
+app.include_router(scheduler.router)

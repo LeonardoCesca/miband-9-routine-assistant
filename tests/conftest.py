@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from copy import deepcopy
-from datetime import datetime
+from datetime import UTC, datetime
+import os
 from uuid import uuid4
 
 import pytest
@@ -14,6 +15,7 @@ from app.agents.notification_agent import NotificationAgent
 from app.agents.orchestrator_agent import OrchestratorAgent
 from app.agents.reminder_agent import ReminderAgent
 from app.agents.scheduler_agent import SchedulerAgent
+from app.config import get_settings
 from app.main import AppContainer, app
 from app.tools.message_tool import MessageTool
 from app.tools.time_tool import TimeTool
@@ -24,11 +26,12 @@ class FakeSupabaseTool:
         self.users: list[dict] = []
         self.reminders: list[dict] = []
         self.logs: list[dict] = []
+        self.now_provider = lambda: datetime.now(UTC)
 
     def create_user(self, payload: dict) -> dict:
         created = {
             "id": str(uuid4()),
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             **payload,
         }
         self.users.append(created)
@@ -40,7 +43,7 @@ class FakeSupabaseTool:
     def create_reminder(self, payload: dict) -> dict:
         created = {
             "id": str(uuid4()),
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             **payload,
         }
         self.reminders.append(created)
@@ -72,13 +75,24 @@ class FakeSupabaseTool:
             "reminder_id": reminder_id,
             "status": status,
             "metadata": metadata or {},
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": self.now_provider().isoformat(),
         }
         self.logs.append(created)
         return created
 
     def list_logs(self) -> list[dict]:
         return deepcopy(self.logs)
+
+    def has_sent_log_in_window(self, *, reminder_id: str, window_start, window_end) -> bool:
+        for log in self.logs:
+            if log["reminder_id"] != reminder_id or log["status"] != "sent":
+                continue
+            created_at = datetime.fromisoformat(log["created_at"])
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=window_end.tzinfo)
+            if window_start <= created_at <= window_end:
+                return True
+        return False
 
 
 class FakeTelegramTool:
@@ -112,12 +126,13 @@ def container() -> AppContainer:
     telegram_tool = FakeTelegramTool()
     time_tool = FixedTimeTool()
     message_tool = MessageTool()
+    supabase_tool.now_provider = time_tool.now
 
     logging_agent = LoggingAgent(supabase_tool)  # type: ignore[arg-type]
     reminder_agent = ReminderAgent(supabase_tool, message_tool, time_tool)  # type: ignore[arg-type]
     notification_agent = NotificationAgent(telegram_tool)  # type: ignore[arg-type]
     orchestrator_agent = OrchestratorAgent(reminder_agent, notification_agent, logging_agent)
-    scheduler_agent = SchedulerAgent(orchestrator_agent, time_tool)
+    scheduler_agent = SchedulerAgent(orchestrator_agent, window_minutes=5)
     analytics_agent = AnalyticsAgent(supabase_tool)  # type: ignore[arg-type]
 
     return AppContainer(
@@ -137,8 +152,15 @@ def container() -> AppContainer:
 @pytest.fixture
 def client(container: AppContainer) -> Generator[TestClient, None, None]:
     original_container = app.state.container
+    original_scheduler_token = os.environ.get("SCHEDULER_TOKEN")
+    os.environ["SCHEDULER_TOKEN"] = "test-scheduler-token"
+    get_settings.cache_clear()
     app.state.container = container
     with TestClient(app) as test_client:
         yield test_client
     app.state.container = original_container
-
+    get_settings.cache_clear()
+    if original_scheduler_token is None:
+        os.environ.pop("SCHEDULER_TOKEN", None)
+    else:
+        os.environ["SCHEDULER_TOKEN"] = original_scheduler_token
