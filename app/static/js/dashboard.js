@@ -12,6 +12,18 @@ const summaryIds = {
 
 let summaryChart;
 
+const chartPalette = {
+  done: "#39f0b4",
+  notDone: "#ff6b81",
+  postponed: "#ffbf47",
+  cyan: "#52e5ff",
+  violet: "#8b5cf6",
+  text: "#f8fbff",
+  muted: "#a8b6d9",
+  grid: "rgba(255,255,255,0.08)",
+  border: "rgba(255,255,255,0.1)",
+};
+
 const statusClassMap = {
   done: "status-done",
   not_done: "status-not_done",
@@ -57,9 +69,10 @@ function renderSummaryChart(summary) {
       datasets: [
         {
           data,
-          backgroundColor: ["#34d399", "#fb7185", "#fbbf24"],
-          borderColor: "rgba(255,255,255,0.08)",
-          borderWidth: 1,
+          backgroundColor: [chartPalette.done, chartPalette.notDone, chartPalette.postponed],
+          borderColor: chartPalette.border,
+          borderWidth: 2,
+          hoverOffset: 10,
         },
       ],
     },
@@ -69,8 +82,8 @@ function renderSummaryChart(summary) {
       plugins: {
         legend: {
           labels: {
-            color: "#f4f7fb",
-            font: { family: "Inter" },
+            color: chartPalette.text,
+            font: { family: "Inter", weight: "600" },
           },
         },
       },
@@ -117,8 +130,9 @@ function renderActivities(activities) {
         datasets: [
           {
             data: [activity.done ?? 0, activity.not_done ?? 0, activity.postponed ?? 0],
-            backgroundColor: ["#34d399", "#fb7185", "#fbbf24"],
+            backgroundColor: [chartPalette.done, chartPalette.notDone, chartPalette.postponed],
             borderRadius: 10,
+            borderSkipped: false,
           },
         ],
       },
@@ -126,11 +140,11 @@ function renderActivities(activities) {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: { ticks: { color: "#9eb0c7" }, grid: { display: false } },
+          x: { ticks: { color: chartPalette.muted }, grid: { display: false } },
           y: {
             beginAtZero: true,
-            ticks: { color: "#9eb0c7", precision: 0 },
-            grid: { color: "rgba(255,255,255,0.08)" },
+            ticks: { color: chartPalette.muted, precision: 0 },
+            grid: { color: chartPalette.grid },
           },
         },
         plugins: { legend: { display: false } },
