@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ page_title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/css/dashboard.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <header class="hero-card glass-card">
+        <div>
+          <p class="eyebrow">Band Routine Dashboard</p>
+          <h1>{{ page_title }}</h1>
+          <p class="hero-copy">{{ subtitle }}</p>
+        </div>
+        <div class="hero-pill">
+          <span class="hero-pill-label">Ultima atualizacao</span>
+          <span id="last-updated">Carregando metricas...</span>
+        </div>
+      </header>
+
+      <section class="summary-grid">
+        <article class="metric-card glass-card">
+          <span>Respondidos</span>
+          <strong id="summary-total-answered">0</strong>
+        </article>
+        <article class="metric-card glass-card">
+          <span>Feitos</span>
+          <strong id="summary-done">0</strong>
+        </article>
+        <article class="metric-card glass-card">
+          <span>Nao feitos</span>
+          <strong id="summary-not-done">0</strong>
+        </article>
+        <article class="metric-card glass-card">
+          <span>Adiados</span>
+          <strong id="summary-postponed">0</strong>
+        </article>
+        <article class="metric-card glass-card accent-card">
+          <span>Conclusao</span>
+          <strong id="summary-completion-rate">0%</strong>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="glass-card chart-card">
+          <div class="section-heading">
+            <div>
+              <p class="section-tag">Visao geral</p>
+              <h2>Distribuicao das respostas</h2>
+            </div>
+          </div>
+          <div class="chart-wrapper large">
+            <canvas id="summary-doughnut-chart"></canvas>
+          </div>
+        </article>
+
+        <article class="glass-card logs-card">
+          <div class="section-heading">
+            <div>
+              <p class="section-tag">Timeline</p>
+              <h2>Logs recentes</h2>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Atividade</th>
+                  <th>Status</th>
+                  <th>Data/Hora</th>
+                  <th>Mensagem</th>
+                </tr>
+              </thead>
+              <tbody id="recent-logs-body">
+                <tr>
+                  <td colspan="4" class="empty-state">Nenhum log encontrado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="activity-section">
+        <div class="section-heading">
+          <div>
+            <p class="section-tag">Atividades</p>
+            <h2>Evolucao por habito</h2>
+          </div>
+        </div>
+        <div class="activity-grid" id="activity-grid"></div>
+      </section>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+  </body>
+</html>

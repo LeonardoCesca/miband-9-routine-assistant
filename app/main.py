@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, status
+from fastapi.staticfiles import StaticFiles
 
 from app.agents.analytics_agent import AnalyticsAgent
 from app.agents.logging_agent import LoggingAgent
@@ -14,13 +15,14 @@ from app.agents.scheduler_agent import SchedulerAgent
 from app.config import get_settings
 from app.database import get_supabase_client
 from app.models import CallbackActionResult, HealthResponse
-from app.routes import analytics, reminders, telegram, users, scheduler
+from app.routes import analytics, dashboard, reminders, scheduler, telegram, users
 from app.services.supabase_service import SupabaseService
 from app.services.telegram_service import TelegramService
 from app.tools.message_tool import MessageTool
 from app.tools.supabase_tool import SupabaseTool
 from app.tools.telegram_tool import TelegramTool
 from app.tools.time_tool import TimeTool
+
 
 @dataclass
 class AppContainer:
@@ -87,7 +89,7 @@ def build_container() -> AppContainer:
     notification_agent = NotificationAgent(telegram_tool)
     orchestrator_agent = OrchestratorAgent(reminder_agent, notification_agent, logging_agent)
     scheduler_agent = SchedulerAgent(orchestrator_agent, window_minutes=5)
-    analytics_agent = AnalyticsAgent(supabase_tool)
+    analytics_agent = AnalyticsAgent(supabase_tool, time_tool)
 
     return AppContainer(
         supabase_tool=supabase_tool,
@@ -105,6 +107,7 @@ def build_container() -> AppContainer:
 
 app = FastAPI(title="band-routine-assistant", version="0.1.0")
 app.state.container = None
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.on_event("startup")
@@ -123,3 +126,4 @@ app.include_router(reminders.router)
 app.include_router(telegram.router)
 app.include_router(analytics.router)
 app.include_router(scheduler.router)
+app.include_router(dashboard.router)

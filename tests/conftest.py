@@ -133,7 +133,7 @@ def container() -> AppContainer:
     notification_agent = NotificationAgent(telegram_tool)  # type: ignore[arg-type]
     orchestrator_agent = OrchestratorAgent(reminder_agent, notification_agent, logging_agent)
     scheduler_agent = SchedulerAgent(orchestrator_agent, window_minutes=5)
-    analytics_agent = AnalyticsAgent(supabase_tool)  # type: ignore[arg-type]
+    analytics_agent = AnalyticsAgent(supabase_tool, time_tool)  # type: ignore[arg-type]
 
     return AppContainer(
         supabase_tool=supabase_tool,  # type: ignore[arg-type]

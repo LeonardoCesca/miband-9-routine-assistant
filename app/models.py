@@ -120,3 +120,34 @@ class SchedulerRunResponse(BaseModel):
     sent_keys: list[str]
     current_time: datetime
     window_minutes: int
+
+
+class DashboardSummary(BaseModel):
+    total_answered: int = 0
+    done: int = 0
+    not_done: int = 0
+    postponed: int = 0
+    completion_rate: float = 0
+
+
+class DashboardActivityMetric(BaseModel):
+    title: str
+    sent: int = 0
+    done: int = 0
+    not_done: int = 0
+    postponed: int = 0
+    error: int = 0
+    completion_rate: float = 0
+
+
+class DashboardRecentLog(BaseModel):
+    title: str
+    status: str
+    created_at: str
+    message: str = ""
+
+
+class DashboardMetricsResponse(BaseModel):
+    summary: DashboardSummary
+    activities: list[DashboardActivityMetric] = Field(default_factory=list)
+    recent_logs: list[DashboardRecentLog] = Field(default_factory=list)
