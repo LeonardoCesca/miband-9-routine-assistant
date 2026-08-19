@@ -17,6 +17,8 @@ from app.agents.reminder_agent import ReminderAgent
 from app.agents.scheduler_agent import SchedulerAgent
 from app.config import get_settings
 from app.main import AppContainer, app
+from app.notifications.service import NotificationService
+from app.notifications.transport import NotificationTransport
 from app.tools.message_tool import MessageTool
 from app.tools.time_tool import TimeTool
 
@@ -95,20 +97,18 @@ class FakeSupabaseTool:
         return False
 
 
-class FakeTelegramTool:
+class FakeNotificationTransport(NotificationTransport):
     def __init__(self) -> None:
-        self.sent_messages: list[dict] = []
-        self.answered_callbacks: list[dict] = []
+        self.sent: list[dict[str, str]] = []
 
-    async def send_message(self, payload) -> dict:
-        data = payload.model_dump(mode="json")
-        self.sent_messages.append(data)
-        return {"ok": True, "result": data}
+    async def connect(self) -> None:
+        pass
 
-    async def answer_callback_query(self, callback_query_id: str, text: str) -> dict:
-        data = {"callback_query_id": callback_query_id, "text": text}
-        self.answered_callbacks.append(data)
-        return {"ok": True, "result": data}
+    async def disconnect(self) -> None:
+        pass
+
+    async def send(self, title: str, message: str) -> None:
+        self.sent.append({"title": title, "message": message})
 
 
 class FixedTimeTool(TimeTool):
@@ -123,14 +123,16 @@ class FixedTimeTool(TimeTool):
 @pytest.fixture
 def container() -> AppContainer:
     supabase_tool = FakeSupabaseTool()
-    telegram_tool = FakeTelegramTool()
     time_tool = FixedTimeTool()
     message_tool = MessageTool()
     supabase_tool.now_provider = time_tool.now
 
+    transport = FakeNotificationTransport()
+    notification_service = NotificationService(transport)
+
     logging_agent = LoggingAgent(supabase_tool)  # type: ignore[arg-type]
     reminder_agent = ReminderAgent(supabase_tool, message_tool, time_tool)  # type: ignore[arg-type]
-    notification_agent = NotificationAgent(telegram_tool)  # type: ignore[arg-type]
+    notification_agent = NotificationAgent(notification_service)
     orchestrator_agent = OrchestratorAgent(reminder_agent, notification_agent, logging_agent)
     scheduler_agent = SchedulerAgent(orchestrator_agent, window_minutes=5)
     analytics_agent = AnalyticsAgent(supabase_tool, time_tool)  # type: ignore[arg-type]
@@ -139,7 +141,7 @@ def container() -> AppContainer:
         supabase_tool=supabase_tool,  # type: ignore[arg-type]
         time_tool=time_tool,
         message_tool=message_tool,
-        telegram_tool=telegram_tool,  # type: ignore[arg-type]
+        notification_service=notification_service,
         logging_agent=logging_agent,
         reminder_agent=reminder_agent,
         notification_agent=notification_agent,

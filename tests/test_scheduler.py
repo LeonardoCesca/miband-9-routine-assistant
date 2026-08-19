@@ -10,9 +10,7 @@ def test_scheduler_route_requires_token(client):
 
 @pytest.mark.asyncio
 async def test_scheduler_route_processes_pending_window(client, container):
-    user = container.supabase_tool.create_user(
-        {"name": "Leona", "telegram_chat_id": "123456"}
-    )
+    user = container.supabase_tool.create_user({"name": "Leona"})
     container.supabase_tool.create_reminder(
         {
             "user_id": user["id"],
@@ -33,4 +31,4 @@ async def test_scheduler_route_processes_pending_window(client, container):
     assert response.status_code == 200
     assert response.json()["processed"] == 1
     assert response.json()["window_minutes"] == 5
-    assert len(container.telegram_tool.sent_messages) == 1
+    assert len(container.notification_service.transport.sent) == 1

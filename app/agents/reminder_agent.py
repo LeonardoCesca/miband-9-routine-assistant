@@ -46,14 +46,12 @@ class ReminderAgent:
                 ReminderDispatch(
                     reminder_id=reminder["id"],
                     user_id=reminder["user_id"],
-                    chat_id=user["telegram_chat_id"],
                     title=reminder["title"],
                     message=reminder["message"],
                     text=self._message_tool.build_text(
                         title=reminder["title"],
                         message=reminder["message"],
                     ),
-                    reply_markup=self._message_tool.build_keyboard(reminder_id),
                     dedupe_key=self._time_tool.build_window_key(
                         reminder_id, window_minutes, current=current
                     ),

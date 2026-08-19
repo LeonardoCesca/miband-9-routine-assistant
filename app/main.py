@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.agents.analytics_agent import AnalyticsAgent
@@ -14,13 +13,13 @@ from app.agents.reminder_agent import ReminderAgent
 from app.agents.scheduler_agent import SchedulerAgent
 from app.config import get_settings
 from app.database import get_supabase_client
-from app.models import CallbackActionResult, HealthResponse
-from app.routes import analytics, dashboard, reminders, scheduler, telegram, users
+from app.models import HealthResponse
+from app.notifications.factory import create_transport
+from app.notifications.service import NotificationService
+from app.routes import analytics, dashboard, reminders, scheduler, users
 from app.services.supabase_service import SupabaseService
-from app.services.telegram_service import TelegramService
 from app.tools.message_tool import MessageTool
 from app.tools.supabase_tool import SupabaseTool
-from app.tools.telegram_tool import TelegramTool
 from app.tools.time_tool import TimeTool
 
 
@@ -29,7 +28,7 @@ class AppContainer:
     supabase_tool: SupabaseTool
     time_tool: TimeTool
     message_tool: MessageTool
-    telegram_tool: TelegramTool
+    notification_service: NotificationService
     logging_agent: LoggingAgent
     reminder_agent: ReminderAgent
     notification_agent: NotificationAgent
@@ -37,56 +36,21 @@ class AppContainer:
     scheduler_agent: SchedulerAgent
     analytics_agent: AnalyticsAgent
 
-    async def handle_callback(
-        self, callback_data: str, callback_query_id: str | None = None
-    ) -> CallbackActionResult:
-        action, reminder_id = self._parse_callback_data(callback_data)
-        reminder = self.supabase_tool.get_reminder(reminder_id)
-        if reminder is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reminder not found")
-
-        current = self.time_tool.now()
-        metadata: dict[str, Any] = {}
-        if action == "postponed":
-            metadata = {
-                "current_time": current.isoformat(),
-                "suggested_time": self.time_tool.plus_minutes(15, current=current).isoformat(),
-            }
-
-        self.logging_agent.log(
-            user_id=str(reminder["user_id"]),
-            reminder_id=reminder_id,
-            status=action,
-            metadata=metadata,
-        )
-        return CallbackActionResult(
-            status=action,
-            reminder_id=reminder["id"],
-            user_id=reminder["user_id"],
-            metadata=metadata,
-        )
-
-    @staticmethod
-    def _parse_callback_data(callback_data: str) -> tuple[str, str]:
-        parts = callback_data.split(":", maxsplit=1)
-        if len(parts) != 2 or parts[0] not in {"done", "not_done", "postponed"}:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid callback")
-        return parts[0], parts[1]
-
 
 def build_container() -> AppContainer:
     settings = get_settings()
     supabase_service = SupabaseService(get_supabase_client())
-    telegram_service = TelegramService(settings.telegram_bot_token)
 
     supabase_tool = SupabaseTool(supabase_service)
     time_tool = TimeTool(settings.app_timezone)
     message_tool = MessageTool()
-    telegram_tool = TelegramTool(telegram_service)
+
+    transport = create_transport(settings)
+    notification_service = NotificationService(transport)
 
     logging_agent = LoggingAgent(supabase_tool)
     reminder_agent = ReminderAgent(supabase_tool, message_tool, time_tool)
-    notification_agent = NotificationAgent(telegram_tool)
+    notification_agent = NotificationAgent(notification_service)
     orchestrator_agent = OrchestratorAgent(reminder_agent, notification_agent, logging_agent)
     scheduler_agent = SchedulerAgent(orchestrator_agent, window_minutes=5)
     analytics_agent = AnalyticsAgent(supabase_tool, time_tool)
@@ -95,7 +59,7 @@ def build_container() -> AppContainer:
         supabase_tool=supabase_tool,
         time_tool=time_tool,
         message_tool=message_tool,
-        telegram_tool=telegram_tool,
+        notification_service=notification_service,
         logging_agent=logging_agent,
         reminder_agent=reminder_agent,
         notification_agent=notification_agent,
@@ -123,7 +87,6 @@ def health() -> HealthResponse:
 
 app.include_router(users.router)
 app.include_router(reminders.router)
-app.include_router(telegram.router)
 app.include_router(analytics.router)
 app.include_router(scheduler.router)
 app.include_router(dashboard.router)

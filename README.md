@@ -1,53 +1,45 @@
 # band-routine-assistant
 
-`band-routine-assistant` e um backend para orquestrar lembretes recorrentes via Telegram, com resposta em um toque, rastreabilidade operacional e base analitica para produtos de rotina, wellness e accountability.
+`band-routine-assistant` is a FastAPI backend for habit reminders delivered directly to a Xiaomi Smart Band 9 Pro via Bluetooth Low Energy, with operational traceability and a lightweight analytics dashboard.
 
-O projeto foi desenhado para ser simples de operar, facil de evoluir e pronto para uso como fundacao de um produto comercial.
+## Highlights
 
-## Visao geral
+- Direct BLE notification delivery to Mi Band 9 Pro
+- Habit response tracking with `done`, `not_done`, `postponed`, `sent`, and `error`
+- Weekly schedule support with hour, minute, and day-of-week rules
+- External HTTP scheduler support for lean deployments
+- Web dashboard with summary metrics, activity charts, and recent logs
+- Modular architecture with agents, tools, and services
 
-O sistema executa um fluxo enxuto:
-- um scheduler HTTP externo aciona a API
-- a API identifica lembretes elegiveis por horario e dia da semana
-- o Telegram entrega a notificacao ao usuario
-- a resposta do usuario e registrada para acompanhamento e analytics
+## Product Flow
 
-## O que o produto entrega
-
-- Lembretes recorrentes com baixo atrito
-- Resposta direta no Telegram com botoes inline
-- Registro de `done`, `not_done` e `postponed`
-- Regras por horario e dia da semana
-- Estrutura pronta para auditoria, observabilidade e metricas
-- Arquitetura modular para evolucao comercial
-
-## Casos de uso
-
-- Rotinas pessoais e micro-habitos
-- Programas de treino e adesao
-- Check-ins de autocuidado
-- Fluxos de accountability
-- MVPs wellness e health behavior
+1. An external scheduler calls the API.
+2. The API finds reminders that match the current time window.
+3. BLE delivers the notification directly to the Mi Band 9 Pro.
+4. The system records the result and updates analytics.
 
 ## Stack
 
 - Python 3.11+
 - FastAPI
+- Jinja2
 - Uvicorn
 - Supabase Python Client
+- PostgreSQL / Supabase
+- Bleak (Bluetooth Low Energy)
 - httpx
 - python-dotenv
 - pydantic-settings
 - pytest
 - pytest-asyncio
 
-## Arquitetura
+## Architecture
 
-O projeto separa claramente regra de negocio, orquestracao e execucao tecnica.
+The project keeps business coordination separate from technical execution.
 
-- `Agent`: coordena responsabilidade de negocio
-- `Tool`: executa acao tecnica reutilizavel
-- `Service`: encapsula integracoes externas
+- `Agent`: business decision or orchestration layer
+- `Tool`: reusable technical action
+- `Service`: external integration wrapper
 
 ### Agents
 
@@ -60,36 +52,24 @@ O projeto separa claramente regra de negocio, orquestracao e execucao tecnica.
 
 ### Tools
 
-- `TelegramTool`
 - `SupabaseTool`
 - `TimeTool`
 - `MessageTool`
 
-## Estrutura
+### Notifications
 
-```text
-app/
-  main.py
-  config.py
-  database.py
-  models.py
-  routes/
-  agents/
-  tools/
-  services/
-  sql/
-tests/
-.env.example
-.gitignore
-requirements.txt
-render.yaml
-README.md
-LICENSE
-```
+- `NotificationTransport` (ABC)
+- `BLETransport`
+- `NotificationService`
 
-## API
+### Miband BLE
 
-### Endpoints principais
+- `MiBandClient`
+- `ConnectionManager`
+- `MiBandProtocol`
+- `scanner`
+
+## Main Endpoints
 
 - `GET /health`
 - `POST /users`
@@ -97,71 +77,108 @@ LICENSE
 - `POST /reminders`
 - `GET /reminders`
 - `PATCH /reminders/{id}/toggle`
-- `POST /telegram/webhook`
 - `GET /analytics`
 - `POST /scheduler/run`
+- `GET /dashboard`
+- `GET /api/dashboard/metrics`
 
-## Scheduler recomendado
+## Dashboard
 
-O projeto foi estruturado para operar com scheduler HTTP externo. Para operacao simples e custo baixo, a estrategia recomendada e usar um serviço de cron HTTP como `cron-job.org`.
+The project includes a responsive glassmorphism dashboard for tracking habit consistency and reminder outcomes.
 
-Essa abordagem:
-- remove dependencia de scheduler interno na aplicacao
-- reduz complexidade operacional
-- funciona bem em deploys leves e ambientes de MVP
+### Access
 
-## Deploy
+- Web page: `GET /dashboard`
+- JSON metrics: `GET /api/dashboard/metrics`
 
-O projeto inclui configuracao de deploy para Render em [render.yaml](/c:/Users/leona/Documents/band-routine-assistant/render.yaml:1).
+### Dashboard Experience
 
-O fluxo de deploy esperado e:
-- publicar a API
-- configurar variaveis de ambiente
-- apontar o scheduler externo para o endpoint de processamento
-- configurar o webhook do Telegram
+- Executive summary cards
+- Overall completion chart
+- Activity-level performance cards
+- Recent response log table
+- Mobile-friendly layout
 
-Detalhes sensiveis de infraestrutura, credenciais e banco devem permanecer fora deste README e ser gerenciados via ambiente e documentacao interna de operacao.
+## Scheduler Strategy
 
-## Operacao
+The recommended setup is an external HTTP scheduler such as `cron-job.org` calling:
 
-O endpoint de scheduler retorna metadados suficientes para observacao operacional, incluindo quantidade processada, horario da execucao e identificadores enviados. Isso facilita diagnostico de:
-- scheduler chamando a API
-- existencia de reminders elegiveis
-- comportamento da janela de processamento
+- `POST /scheduler/run`
 
-## Qualidade
+This keeps the application simple, lightweight, and compatible with small-footprint deployments.
 
-O projeto possui suite automatizada cobrindo:
-- health check
-- usuarios
-- reminders
-- callbacks do Telegram
-- analytics
-- deduplicacao do scheduler
-- filtro por dia da semana
+## BLE Setup
 
-Para executar os testes:
+1. Install bleak: `pip install bleak`
+2. Configure `.env`:
+   ```
+   MIBAND_BLE_ADDRESS=XX:XX:XX:XX:XX:XX
+   MIBAND_BLE_NAME=Xiaomi Smart Band 9 Pro
+   ```
+3. Scan for devices: `python -m app.miband`
+4. Inspect GATT: `python -m app.miband.inspect --output logs/miband_gatt.json`
+
+## Local Development
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+### Test Suite
 
 ```powershell
 pytest
 ```
 
-## Seguranca
+## Project Structure
 
-- nao hardcode segredos
-- mantenha credenciais fora do versionamento
-- use variaveis de ambiente para configuracao sensivel
-- proteja endpoints operacionais com autenticacao adequada
+```text
+app/
+  agents/
+  miband/
+  notifications/
+  routes/
+  services/
+  static/
+  templates/
+  tools/
+  sql/
+  main.py
+  config.py
+  database.py
+  models.py
+tests/
+scripts/
+.env.example
+.gitignore
+requirements.txt
+render.yaml
+LICENSE
+README.md
+```
 
-## Roadmap
+## Quality
 
-- painel administrativo
-- templates de rotina
-- segmentacao por usuario e plano
-- retries e alertas operacionais
-- dashboards de adesao
-- suporte multi-tenant
+The automated suite covers:
 
-## Licenca
+- health checks
+- users
+- reminders
+- analytics summaries
+- dashboard metrics
+- scheduler authentication and processing
+- day-of-week filtering
 
-Este projeto esta licenciado sob a [MIT License](/c:/Users/leona/Documents/band-routine-assistant/LICENSE:1).
+## Security
+
+- Keep credentials outside version control
+- Use environment variables for sensitive configuration
+- Protect operational endpoints with a scheduler token
+- Keep database and infrastructure secrets in secure environment storage
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
