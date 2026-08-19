@@ -6,7 +6,7 @@ def test_dashboard_page_returns_200(client):
 
 
 def test_dashboard_metrics_returns_valid_json(client, container):
-    user = container.supabase_tool.create_user({"name": "Leona"})
+    user = container.supabase_tool.create_user({"name": "Leona", "telegram_chat_id": "123456"})
     reminder = container.supabase_tool.create_reminder(
         {
             "user_id": user["id"],
@@ -39,7 +39,7 @@ def test_dashboard_completion_rate_zero_when_no_answered_logs(client):
 
 
 def test_dashboard_sent_status_not_counted_in_completion(client, container):
-    user = container.supabase_tool.create_user({"name": "Leona"})
+    user = container.supabase_tool.create_user({"name": "Leona", "telegram_chat_id": "123456"})
     reminder = container.supabase_tool.create_reminder(
         {
             "user_id": user["id"],
@@ -64,7 +64,7 @@ def test_dashboard_sent_status_not_counted_in_completion(client, container):
 
 
 def test_dashboard_activity_metrics_are_calculated_correctly(client, container):
-    user = container.supabase_tool.create_user({"name": "Leona"})
+    user = container.supabase_tool.create_user({"name": "Leona", "telegram_chat_id": "123456"})
     reminder = container.supabase_tool.create_reminder(
         {
             "user_id": user["id"],

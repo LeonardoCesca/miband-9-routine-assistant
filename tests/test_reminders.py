@@ -1,5 +1,5 @@
 def test_create_reminder(client):
-    user = client.post("/users", json={"name": "Leona"}).json()
+    user = client.post("/users", json={"name": "Leona", "telegram_chat_id": "123456"}).json()
 
     response = client.post(
         "/reminders",
@@ -22,7 +22,7 @@ def test_create_reminder(client):
 
 
 def test_list_reminders(client):
-    user = client.post("/users", json={"name": "Leona"}).json()
+    user = client.post("/users", json={"name": "Leona", "telegram_chat_id": "123456"}).json()
     client.post(
         "/reminders",
         json={
@@ -43,7 +43,7 @@ def test_list_reminders(client):
 
 
 def test_toggle_reminder(client):
-    user = client.post("/users", json={"name": "Leona"}).json()
+    user = client.post("/users", json={"name": "Leona", "telegram_chat_id": "123456"}).json()
     reminder = client.post(
         "/reminders",
         json={
@@ -63,7 +63,11 @@ def test_toggle_reminder(client):
     assert response.json()["active"] is False
 
 
-def test_message_tool_builds_text(container):
-    text = container.message_tool.build_text(title="Alongar", message="Hora da rotina")
+def test_message_tool_builds_buttons(container):
+    reminder_id = "abc-123"
 
-    assert text == "Alongar\nHora da rotina"
+    keyboard = container.message_tool.build_keyboard(reminder_id)
+
+    assert keyboard.inline_keyboard[0][0].callback_data == f"done:{reminder_id}"
+    assert keyboard.inline_keyboard[0][1].callback_data == f"not_done:{reminder_id}"
+    assert keyboard.inline_keyboard[1][0].callback_data == f"postponed:{reminder_id}"

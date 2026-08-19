@@ -13,6 +13,7 @@ class HealthResponse(BaseModel):
 
 class UserCreate(BaseModel):
     name: str = Field(min_length=1)
+    telegram_chat_id: str = Field(min_length=1)
 
 
 class UserRead(UserCreate):
@@ -71,12 +72,46 @@ class AnalyticsResponse(BaseModel):
     completion_rate: float
 
 
+class InlineKeyboardButton(BaseModel):
+    text: str
+    callback_data: str
+
+
+class InlineKeyboardMarkup(BaseModel):
+    inline_keyboard: list[list[InlineKeyboardButton]]
+
+
+class TelegramSendMessagePayload(BaseModel):
+    chat_id: str
+    text: str
+    reply_markup: InlineKeyboardMarkup
+
+
+class TelegramCallbackQuery(BaseModel):
+    id: str
+    data: str
+    message: dict[str, Any]
+
+
+class TelegramWebhookPayload(BaseModel):
+    callback_query: TelegramCallbackQuery | None = None
+
+
+class CallbackActionResult(BaseModel):
+    status: Literal["done", "not_done", "postponed"]
+    reminder_id: UUID
+    user_id: UUID
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class ReminderDispatch(BaseModel):
     reminder_id: UUID
     user_id: UUID
+    chat_id: str
     title: str
     message: str
     text: str
+    reply_markup: InlineKeyboardMarkup
     dedupe_key: str
 
 

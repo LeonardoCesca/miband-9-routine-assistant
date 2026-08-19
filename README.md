@@ -1,10 +1,10 @@
 # band-routine-assistant
 
-`band-routine-assistant` is a FastAPI backend for habit reminders delivered directly to a Xiaomi Smart Band 9 Pro via Bluetooth Low Energy, with operational traceability and a lightweight analytics dashboard.
+`band-routine-assistant` is a FastAPI backend for habit reminders delivered via Telegram Bot, with operational traceability and a lightweight analytics dashboard.
 
 ## Highlights
 
-- Direct BLE notification delivery to Mi Band 9 Pro
+- Telegram Bot notification delivery with inline buttons
 - Habit response tracking with `done`, `not_done`, `postponed`, `sent`, and `error`
 - Weekly schedule support with hour, minute, and day-of-week rules
 - External HTTP scheduler support for lean deployments
@@ -15,8 +15,9 @@
 
 1. An external scheduler calls the API.
 2. The API finds reminders that match the current time window.
-3. BLE delivers the notification directly to the Mi Band 9 Pro.
-4. The system records the result and updates analytics.
+3. Telegram Bot delivers the notification with inline buttons.
+4. User taps a button; the webhook records the response.
+5. The system records the result and updates analytics.
 
 ## Stack
 
@@ -26,7 +27,6 @@
 - Uvicorn
 - Supabase Python Client
 - PostgreSQL / Supabase
-- Bleak (Bluetooth Low Energy)
 - httpx
 - python-dotenv
 - pydantic-settings
@@ -55,19 +55,12 @@ The project keeps business coordination separate from technical execution.
 - `SupabaseTool`
 - `TimeTool`
 - `MessageTool`
+- `TelegramTool`
 
-### Notifications
+### Services
 
-- `NotificationTransport` (ABC)
-- `BLETransport`
-- `NotificationService`
-
-### Miband BLE
-
-- `MiBandClient`
-- `ConnectionManager`
-- `MiBandProtocol`
-- `scanner`
+- `SupabaseService`
+- `TelegramService`
 
 ## Main Endpoints
 
@@ -79,6 +72,7 @@ The project keeps business coordination separate from technical execution.
 - `PATCH /reminders/{id}/toggle`
 - `GET /analytics`
 - `POST /scheduler/run`
+- `POST /telegram/webhook`
 - `GET /dashboard`
 - `GET /api/dashboard/metrics`
 
@@ -99,6 +93,18 @@ The project includes a responsive glassmorphism dashboard for tracking habit con
 - Recent response log table
 - Mobile-friendly layout
 
+## Telegram Bot Setup
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) and get the token.
+2. Configure `.env`:
+   ```
+   TELEGRAM_BOT_TOKEN=your_token_here
+   ```
+3. Set the webhook:
+   ```
+   POST https://api.telegram.org/bot<YOUR_TOKEN>/setWebhook?url=<YOUR_APP_BASE_URL>/telegram/webhook
+   ```
+
 ## Scheduler Strategy
 
 The recommended setup is an external HTTP scheduler such as `cron-job.org` calling:
@@ -106,17 +112,6 @@ The recommended setup is an external HTTP scheduler such as `cron-job.org` calli
 - `POST /scheduler/run`
 
 This keeps the application simple, lightweight, and compatible with small-footprint deployments.
-
-## BLE Setup
-
-1. Install bleak: `pip install bleak`
-2. Configure `.env`:
-   ```
-   MIBAND_BLE_ADDRESS=XX:XX:XX:XX:XX:XX
-   MIBAND_BLE_NAME=Xiaomi Smart Band 9 Pro
-   ```
-3. Scan for devices: `python -m app.miband`
-4. Inspect GATT: `python -m app.miband.inspect --output logs/miband_gatt.json`
 
 ## Local Development
 
@@ -138,8 +133,6 @@ pytest
 ```text
 app/
   agents/
-  miband/
-  notifications/
   routes/
   services/
   static/
@@ -151,7 +144,6 @@ app/
   database.py
   models.py
 tests/
-scripts/
 .env.example
 .gitignore
 requirements.txt
@@ -171,6 +163,7 @@ The automated suite covers:
 - dashboard metrics
 - scheduler authentication and processing
 - day-of-week filtering
+- Telegram callbacks (done, not_done, postponed)
 
 ## Security
 

@@ -4,7 +4,7 @@ import pytest
 
 
 def test_analytics_completion_rate(client, container):
-    user = client.post("/users", json={"name": "Leona"}).json()
+    user = client.post("/users", json={"name": "Leona", "telegram_chat_id": "123456"}).json()
     reminder = client.post(
         "/reminders",
         json={
@@ -36,7 +36,9 @@ def test_analytics_completion_rate(client, container):
 
 @pytest.mark.asyncio
 async def test_scheduler_agent_does_not_duplicate_same_window(container):
-    user = container.supabase_tool.create_user({"name": "Leona"})
+    user = container.supabase_tool.create_user(
+        {"name": "Leona", "telegram_chat_id": "123456"}
+    )
     container.supabase_tool.create_reminder(
         {
             "user_id": user["id"],
@@ -54,12 +56,14 @@ async def test_scheduler_agent_does_not_duplicate_same_window(container):
 
     assert len(first_run) == 1
     assert second_run == []
-    assert len(container.notification_service.transport.sent) == 1
+    assert len(container.telegram_tool.sent_messages) == 1
 
 
 @pytest.mark.asyncio
 async def test_scheduler_agent_respects_weekday(container):
-    user = container.supabase_tool.create_user({"name": "Leona"})
+    user = container.supabase_tool.create_user(
+        {"name": "Leona", "telegram_chat_id": "123456"}
+    )
     container.supabase_tool.create_reminder(
         {
             "user_id": user["id"],
@@ -75,7 +79,7 @@ async def test_scheduler_agent_respects_weekday(container):
     result = await container.scheduler_agent.tick()
 
     assert result == []
-    assert len(container.notification_service.transport.sent) == 0
+    assert len(container.telegram_tool.sent_messages) == 0
 
 
 def test_no_tokens_are_hardcoded():
@@ -87,6 +91,7 @@ def test_no_tokens_are_hardcoded():
             continue
         content = path.read_text(encoding="utf-8", errors="ignore")
         assert "123456:ABCDEF" not in content
+        assert "TELEGRAM_BOT_TOKEN=real_token" not in content
         assert "SUPABASE_SERVICE_ROLE_KEY=real_key" not in content
 
 
