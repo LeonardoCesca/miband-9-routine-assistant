@@ -1,0 +1,33 @@
+{
+  "package": "com.band.routine.assistant",
+  "name": "Routine",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "minPlatformVersion": 1000,
+  "icon": "/common/logo.png",
+  "deviceTypeList": ["watch"],
+  "features": [
+    { "name": "system.router" },
+    { "name": "system.storage" },
+    { "name": "system.vibrator" },
+    { "name": "system.fetch" }
+  ],
+  "config": {
+    "logLevel": "log",
+    "designWidth": 336
+  },
+  "router": {
+    "entry": "pages/home",
+    "pages": {
+      "pages/home": {
+        "component": "index"
+      },
+      "pages/reminder": {
+        "component": "index"
+      },
+      "pages/history": {
+        "component": "index"
+      }
+    }
+  }
+}

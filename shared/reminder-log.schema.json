@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReminderLog",
+  "type": "object",
+  "required": ["id", "reminderId", "date", "scheduledAt", "status", "answeredAt"],
+  "properties": {
+    "id": { "type": "string" },
+    "reminderId": { "type": "string" },
+    "date": { "type": "string" },
+    "scheduledAt": { "type": "string" },
+    "status": { "type": "string", "enum": ["done", "not_done"] },
+    "answeredAt": { "type": "string" }
+  },
+  "additionalProperties": false
+}

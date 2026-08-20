@@ -1,0 +1,174 @@
+<template>
+  <div class="page">
+    <text class="emoji">{{ emoji }}</text>
+    <text class="title">{{ title }}</text>
+    <text class="message">{{ message }}</text>
+
+    <div if="{{ !answered }}" class="actions">
+      <div class="btn-done {{ saving ? 'btn-disabled' : '' }}" onclick="handleDone">
+        <text class="btn-label">Fiz</text>
+      </div>
+
+      <div class="btn-not-done {{ saving ? 'btn-disabled' : '' }}" onclick="handleNotDone">
+        <text class="btn-label">Não fiz</text>
+      </div>
+    </div>
+
+    <div class="feedback" if="{{ answered }}">
+      <text class="feedback-text">{{ feedbackText }}</text>
+    </div>
+  </div>
+</template>
+
+<script>
+  import router from "@system.router";
+  import ReminderRepository from "../../repositories/reminders-repository.js";
+  import ReminderService from "../../services/reminder-service.js";
+  import VibrationService from "../../services/vibration-service.js";
+
+  export default {
+    private: {
+      reminderId: "",
+      title: "",
+      message: "",
+      hour: 0,
+      minute: 0,
+      emoji: "\uD83D\uDCA7",
+      answered: false,
+      saving: false,
+      feedbackText: "",
+      reminder: null,
+    },
+
+    onInit() {
+      this.reminderId = this.reminderId || "";
+      this.title = this.title || "";
+      this.message = this.message || "";
+      this.hour = parseInt(this.hour) || 0;
+      this.minute = parseInt(this.minute) || 0;
+
+      this.loadReminder();
+    },
+
+    loadReminder() {
+      var self = this;
+      ReminderRepository.getById(this.reminderId).then(function (r) {
+        if (r) {
+          self.reminder = r;
+          self.title = r.title;
+          self.message = r.message;
+        }
+      });
+    },
+
+    handleDone() {
+      if (this.answered || this.saving || !this.reminder) return;
+      console.log("[REMINDER] done clicked");
+      this.saveAnswer("done");
+    },
+
+    handleNotDone() {
+      if (this.answered || this.saving || !this.reminder) return;
+      console.log("[REMINDER] not_done clicked");
+      this.saveAnswer("not_done");
+    },
+
+    saveAnswer(status) {
+      var self = this;
+      self.saving = true;
+      VibrationService.reminder();
+      console.log("[REMINDER] saving log");
+
+      ReminderService.answer(this.reminder, status).then(function () {
+        self.feedbackText = "Registrado";
+        self.answered = true;
+        self.saving = false;
+
+        setTimeout(function () {
+          router.back();
+        }, 1000);
+      }).catch(function (err) {
+        console.log("[REMINDER] save error: " + err);
+        self.feedbackText = "Não foi possível salvar";
+        self.answered = true;
+        self.saving = false;
+      });
+    },
+  };
+</script>
+
+<style>
+  .page {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 336px;
+    height: 480px;
+    padding: 24px 20px;
+  }
+
+  .emoji {
+    font-size: 48px;
+    text-align: center;
+  }
+
+  .title {
+    font-size: 24px;
+    color: #ffffff;
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  .message {
+    font-size: 18px;
+    color: #d0d0d0;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: center;
+    margin-top: 28px;
+  }
+
+  .btn-done {
+    width: 280px;
+    height: 64px;
+    background-color: #09ba07;
+    border-radius: 28px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .btn-not-done {
+    width: 280px;
+    height: 64px;
+    background-color: #3a3a3a;
+    border-radius: 28px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 14px;
+  }
+
+  .btn-disabled {
+    opacity: 0.4;
+  }
+
+  .btn-label {
+    font-size: 20px;
+    color: #ffffff;
+  }
+
+  .feedback {
+    flex-direction: column;
+    align-items: center;
+    margin-top: 40px;
+  }
+
+  .feedback-text {
+    font-size: 20px;
+    color: #ffffff;
+    text-align: center;
+  }
+</style>

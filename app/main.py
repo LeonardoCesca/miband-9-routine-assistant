@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.agents.analytics_agent import AnalyticsAgent
@@ -15,7 +16,7 @@ from app.agents.scheduler_agent import SchedulerAgent
 from app.config import get_settings
 from app.database import get_supabase_client
 from app.models import CallbackActionResult, HealthResponse
-from app.routes import analytics, dashboard, reminders, scheduler, telegram, users
+from app.routes import analytics, band, dashboard, reminders, scheduler, telegram, users
 from app.services.supabase_service import SupabaseService
 from app.services.telegram_service import TelegramService
 from app.tools.message_tool import MessageTool
@@ -107,6 +108,14 @@ def build_container() -> AppContainer:
 
 app = FastAPI(title="band-routine-assistant", version="0.1.0")
 app.state.container = None
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -127,3 +136,4 @@ app.include_router(telegram.router)
 app.include_router(analytics.router)
 app.include_router(scheduler.router)
 app.include_router(dashboard.router)
+app.include_router(band.router)
