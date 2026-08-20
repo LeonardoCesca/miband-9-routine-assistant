@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "velajs": {
+      "type": "local",
+      "command": ["npx", "-y", "velajs-mcp"],
+      "enabled": true
+    }
+  }
+}

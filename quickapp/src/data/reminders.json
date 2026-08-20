@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-19T23:19:55.932656+00:00",
+  "reminders": [
+    {
+      "id": "e701117b-be8b-4768-927f-3c7be71fcd29",
+      "title": "💧 Água",
+      "message": "Bom dia! Hora de tomar água. 💧",
+      "hour": 9,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "af150adf-1a0c-48d8-a234-93a8c43818fa",
+      "title": "💧 Água",
+      "message": "Pausa rápida: beba um copo de água.",
+      "hour": 10,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "9f712ec6-be32-4571-9c08-bdfaf1c52a41",
+      "title": "💧 Água",
+      "message": "Lembrete de hidratação: hora de beber água.",
+      "hour": 11,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "2fa21846-baa5-4c03-8610-520dae670e82",
+      "title": "💧 Água",
+      "message": "Antes do almoço, tome um copo de água.",
+      "hour": 12,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "33f2619c-f01d-479a-b788-0ded1b7169b2",
+      "title": "💧 Água",
+      "message": "Hora de se hidratar. 💧",
+      "hour": 13,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "54b3db26-4f28-498e-8208-1b5cd14a6fbe",
+      "title": "💧 Água",
+      "message": "Pausa para água. Um copo já conta!",
+      "hour": 14,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "1f7003c0-df1c-47b0-8f25-5606a152b2a4",
+      "title": "💧 Água",
+      "message": "Lembrete: mantenha a hidratação em dia.",
+      "hour": 15,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "9e0f0497-8a9d-48f6-ace7-796a17b539e3",
+      "title": "💧 Água",
+      "message": "Hora de beber mais um copo de água.",
+      "hour": 16,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "2571c612-db04-4c79-afc0-a9a620fba340",
+      "title": "💧 Água",
+      "message": "Pausa rápida para se hidratar.",
+      "hour": 17,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "10775c35-63c0-4380-8ad4-d3b98119338f",
+      "title": "💧 Água",
+      "message": "Final de tarde: não esqueça da água.",
+      "hour": 18,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "655ade73-6798-4b39-8f7b-f12b070513b7",
+      "title": "💧 Água",
+      "message": "Mais um copo de água para fechar bem o dia.",
+      "hour": 19,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    },
+    {
+      "id": "8ba8755f-efda-4215-ab7b-3780bb8e438a",
+      "title": "💧 Água",
+      "message": "Último lembrete de hidratação do dia. 💧",
+      "hour": 20,
+      "minute": 0,
+      "active": true,
+      "type": "water"
+    }
+  ]
+}

@@ -1,0 +1,198 @@
+<template>
+  <div class="page">
+    <text class="app-title">Routine Assistant</text>
+    <text class="section-label">Hoje</text>
+
+    <div class="progress-card">
+      <text class="progress-label">{{ done }} / {{ responded }} concluidos</text>
+      <div class="bar-bg">
+        <div class="bar-fill" style="width: {{ percent }}%;"></div>
+      </div>
+    </div>
+
+    <div class="next-card" if="{{ nextReminder }}">
+      <text class="next-label">Proximo: {{ nextTime }}</text>
+    </div>
+
+    <div class="btn-history" onclick="goHistory">
+      <text class="btn-txt">Ver historico</text>
+    </div>
+
+    <div class="btn-test" onclick="testReminder">
+      <text class="btn-txt-small">Testar lembrete</text>
+    </div>
+  </div>
+</template>
+
+<script>
+  import router from "@system.router";
+  import ReminderRepository from "../../repositories/reminders-repository.js";
+  import ReminderLogRepository from "../../repositories/reminder-logs-repository.js";
+  import ReminderService from "../../services/reminder-service.js";
+  import Clock from "../../services/clock.js";
+
+  export default {
+    private: {
+      done: 0,
+      responded: 0,
+      percent: 0,
+      nextReminder: null,
+      nextTime: "",
+    },
+
+    onInit() {
+      this.loadData();
+    },
+
+    onShow() {
+      this.loadData();
+    },
+
+    loadData() {
+      var self = this;
+
+      ReminderRepository.init().then(function () {
+        return ReminderLogRepository.init();
+      }).then(function () {
+        var progress = ReminderService.getTodayProgress();
+        self.responded = progress.responded;
+        self.done = progress.done;
+        self.percent = progress.responded > 0
+          ? Math.round((progress.done / progress.responded) * 100)
+          : 0;
+
+        return ReminderRepository.getNext();
+      }).then(function (next) {
+        if (next) {
+          self.nextReminder = next;
+          self.nextTime = Clock.formatHour(next.hour, next.minute);
+        } else {
+          self.nextReminder = null;
+          self.nextTime = "";
+        }
+      });
+    },
+
+    goHistory() {
+      router.push({ uri: "/pages/history" });
+    },
+
+    testReminder() {
+      ReminderRepository.init().then(function () {
+        return ReminderRepository.getActive();
+      }).then(function (active) {
+        if (active.length > 0) {
+          var r = active[0];
+          router.push({
+            uri: "/pages/reminder",
+            params: {
+              reminderId: r.id,
+              title: r.title,
+              message: r.message,
+              hour: r.hour,
+              minute: r.minute,
+            },
+          });
+        }
+      });
+    },
+  };
+</script>
+
+<style>
+  .page {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px;
+    width: 336px;
+  }
+
+  .app-title {
+    font-size: 22px;
+    color: #ffffff;
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .section-label {
+    font-size: 16px;
+    color: #757575;
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  .progress-card {
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 20px;
+  }
+
+  .progress-label {
+    font-size: 18px;
+    color: #ffffff;
+    text-align: center;
+  }
+
+  .bar-bg {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+
+  .bar-fill {
+    height: 8px;
+    background-color: #09ba07;
+    border-radius: 4px;
+  }
+
+  .next-card {
+    width: 100%;
+    background-color: rgba(255, 198, 91, 0.15);
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 12px;
+    align-items: center;
+  }
+
+  .next-label {
+    font-size: 16px;
+    color: #ffc65b;
+    text-align: center;
+  }
+
+  .btn-history {
+    width: 100%;
+    height: 48px;
+    background-color: #09ba07;
+    border-radius: 24px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .btn-txt {
+    font-size: 18px;
+    color: #ffffff;
+  }
+
+  .btn-test {
+    width: 100%;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+  }
+
+  .btn-txt-small {
+    font-size: 14px;
+    color: #757575;
+  }
+</style>

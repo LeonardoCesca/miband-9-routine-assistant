@@ -1,0 +1,10 @@
+<script>
+  export default {
+    onCreate() {
+      console.log("Routine Assistant created");
+    },
+    onDestroy() {
+      console.log("Routine Assistant destroyed");
+    },
+  };
+</script>

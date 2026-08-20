@@ -1,0 +1,143 @@
+<template>
+  <div class="page" @swipe="back">
+    <text class="title">Hoje</text>
+
+    <div class="empty" if="{{ logs.length === 0 }}">
+      <text class="empty-txt">Nenhum registro</text>
+    </div>
+
+    <div class="list" if="{{ logs.length > 0 }}">
+      <div class="item" for="{{ logs }}">
+        <text class="item-status {{ $item.status === 'done' ? 'status-done' : 'status-not-done' }}">
+          {{ $item.status === 'done' ? 'Sim' : 'Nao' }}
+        </text>
+        <text class="item-time">{{ $item.scheduledAt }}</text>
+        <text class="item-label">Agua</text>
+      </div>
+    </div>
+
+    <div class="summary" if="{{ logs.length > 0 }}">
+      <text class="summary-txt">{{ done }} / {{ logs.length }} concluidos</text>
+    </div>
+  </div>
+</template>
+
+<script>
+  import router from "@system.router";
+  import ReminderService from "../../services/reminder-service.js";
+
+  export default {
+    private: {
+      logs: [],
+      done: 0,
+    },
+
+    onInit() {
+      this.loadHistory();
+    },
+
+    onShow() {
+      this.loadHistory();
+    },
+
+    loadHistory() {
+      var history = ReminderService.getTodayHistory();
+      this.logs = history;
+
+      var doneCount = 0;
+      for (var i = 0; i < history.length; i++) {
+        if (history[i].status === "done") {
+          doneCount++;
+        }
+      }
+      this.done = doneCount;
+    },
+
+    back(event) {
+      if (event.direction === "right") {
+        router.back();
+      }
+    },
+  };
+</script>
+
+<style>
+  .page {
+    flex-direction: column;
+    align-items: center;
+    width: 336px;
+    padding: 20px 16px;
+  }
+
+  .title {
+    font-size: 22px;
+    color: #ffffff;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .empty {
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .empty-txt {
+    font-size: 16px;
+    color: #757575;
+  }
+
+  .list {
+    width: 100%;
+    flex-direction: column;
+    margin-top: 16px;
+  }
+
+  .item {
+    width: 100%;
+    height: 44px;
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 0 12px;
+    margin-bottom: 6px;
+  }
+
+  .item-status {
+    font-size: 16px;
+    width: 36px;
+  }
+
+  .status-done {
+    color: #09ba07;
+  }
+
+  .status-not-done {
+    color: #ff4444;
+  }
+
+  .item-time {
+    font-size: 16px;
+    color: #ffffff;
+    width: 56px;
+    margin-left: 8px;
+  }
+
+  .item-label {
+    font-size: 16px;
+    color: #b0b0b0;
+    margin-left: 8px;
+  }
+
+  .summary {
+    width: 100%;
+    align-items: center;
+    margin-top: 16px;
+  }
+
+  .summary-txt {
+    font-size: 16px;
+    color: #757575;
+  }
+</style>

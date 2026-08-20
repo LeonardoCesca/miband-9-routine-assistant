@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Reminder",
+  "type": "object",
+  "required": ["id", "title", "message", "hour", "minute", "active"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "message": { "type": "string" },
+    "hour": { "type": "integer", "minimum": 0, "maximum": 23 },
+    "minute": { "type": "integer", "minimum": 0, "maximum": 59 },
+    "active": { "type": "boolean" },
+    "type": { "type": "string" }
+  },
+  "additionalProperties": false
+}
